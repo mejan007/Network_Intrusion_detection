@@ -1,0 +1,354 @@
+# num_epochs = 5
+# num_classes = 5
+# # Training and validation loop
+# train_class_accuracy = ClassBasedAccuracy(num_classes=num_classes)
+# val_class_accuracy = ClassBasedAccuracy(num_classes=num_classes)
+
+# tensorboard_logger = TensorBoardLogger(log_dir='tensorboard_logs')
+# for epoch in range(num_epochs):
+#     # Training phase
+#     model.train()
+#     train_class_accuracy.reset()
+#     running_loss = 0.0
+#     total_correct = 0
+#     total_samples = 0
+
+#     progress_bar = tqdm(train_loader, 
+#                          desc=f"Epoch: {epoch + 1}/{num_epochs}", 
+#                          leave=False, 
+#                          ncols=120)
+
+#     for i, (inputs, labels) in enumerate(progress_bar):
+#         inputs, labels = inputs.to(device), labels.to(device)
+        
+#         # Zero the parameter gradients
+#         optimizer.zero_grad()
+        
+#         # Forward pass
+#         outputs = model(inputs)
+#         loss = custom_loss_fn(outputs, labels)
+        
+#         # Backward pass and optimize
+#         loss.backward()
+#         optimizer.step()
+        
+#         # Predictions
+#         _, predicted = torch.max(outputs, 1)
+        
+#         # Update training metrics
+#         train_class_accuracy.update_state(labels, predicted)
+#         running_loss += loss.item()
+#         total_correct += (predicted == labels).sum().item()
+#         total_samples += labels.size(0)
+
+#         # Update progress bar
+#         progress_bar.set_postfix(
+#             batch=f"[{i + 1}/{len(train_loader)}]", 
+#             loss=f"{loss.item():.4f}", 
+#             overall_acc=f"{100.0 * total_correct / total_samples:.2f}%"
+#         )
+
+#     # Compute training metrics for the epoch
+#     train_class_acc = train_class_accuracy.compute()
+#     train_overall_acc = 100.0 * total_correct / total_samples
+#     train_avg_class_acc = train_class_acc.mean().item()
+
+#     tensorboard_logger.log_epoch(
+#         epoch,
+#         per_class_acc=train_class_acc.cpu().numpy(),  # Per class accuracies
+#         per_class_loss=[running_loss / len(train_loader)],  # Average loss per class
+#         overall_acc=train_overall_acc
+#     )
+
+#     # Validation phase
+#     model.eval()
+#     val_class_accuracy.reset()
+#     val_running_loss = 0.0
+#     val_total_correct = 0
+#     val_total_samples = 0
+
+#     with torch.no_grad():
+#         for inputs, labels in tqdm(val_loader, desc="Validation", leave=False):
+#             inputs, labels = inputs.to(device), labels.to(device)
+            
+#             # Forward pass
+#             outputs = model(inputs)
+#             loss = custom_loss_fn(outputs, labels)
+            
+#             # Predictions
+#             _, predicted = torch.max(outputs, 1)
+            
+#             # Update validation metrics
+#             val_class_accuracy.update_state(labels, predicted)
+#             val_running_loss += loss.item()
+#             val_total_correct += (predicted == labels).sum().item()
+#             val_total_samples += labels.size(0)
+
+#     # Compute validation metrics
+#     val_class_acc = val_class_accuracy.compute()
+#     val_overall_acc = 100.0 * val_total_correct / val_total_samples
+#     val_avg_class_acc = val_class_acc.mean().item()
+
+#     tensorboard_logger.log_epoch(
+#         epoch,
+#         per_class_acc=val_class_acc.cpu().numpy(),
+#         per_class_loss=[val_running_loss / len(val_loader)],
+#         overall_acc=val_overall_acc
+#     )
+#     # Print epoch summary
+#     print(f"\nEpoch {epoch + 1}/{num_epochs}")
+#     print(f"Training   - Overall Accuracy: {train_overall_acc:.2f}%")
+#     print(f"Training   - Per Class Accuracies: {train_class_acc.cpu().numpy()}")
+#     print(f"Training   - Avg Class Accuracy: {train_avg_class_acc*100:.2f}%")
+#     print(f"Validation - Overall Accuracy: {val_overall_acc:.2f}%")
+#     print(f"Validation - Per Class Accuracies: {val_class_acc.cpu().numpy()}")
+#     print(f"Validation - Avg Class Accuracy: {val_avg_class_acc*100:.2f}%")
+
+
+# tensorboard_logger.close()
+
+
+
+# def train_and_validate_epoch(
+#     model, 
+#     train_loader, 
+#     val_loader, 
+#     optimizer, 
+#     custom_loss_fn, 
+#     device, 
+#     num_classes, 
+#     epoch, 
+#     num_epochs, 
+#     tensorboard_logger=None
+# ):
+#     # Training phase
+#     train_class_accuracy = ClassBasedAccuracy(num_classes=num_classes)
+#     model.train()
+#     train_class_accuracy.reset()
+#     running_loss = 0.0
+#     total_correct = 0
+#     total_samples = 0
+
+#     progress_bar = tqdm(train_loader, 
+#                          desc=f"Epoch: {epoch + 1}/{num_epochs}", 
+#                          leave=False, 
+#                          ncols=120)
+
+#     for i, (inputs, labels) in enumerate(progress_bar):
+#         inputs, labels = inputs.to(device), labels.to(device)
+        
+#         optimizer.zero_grad()
+#         outputs = model(inputs)
+#         loss = custom_loss_fn(outputs, labels)
+        
+#         loss.backward()
+#         optimizer.step()
+        
+#         _, predicted = torch.max(outputs, 1)
+        
+#         train_class_accuracy.update_state(labels, predicted)
+#         running_loss += loss.item()
+#         total_correct += (predicted == labels).sum().item()
+#         total_samples += labels.size(0)
+
+#         progress_bar.set_postfix(
+#             batch=f"[{i + 1}/{len(train_loader)}]", 
+#             loss=f"{loss.item():.4f}", 
+#             overall_acc=f"{100.0 * total_correct / total_samples:.2f}%"
+#         )
+
+#     # Training metrics
+#     train_class_acc = train_class_accuracy.compute()
+#     train_overall_acc = 100.0 * total_correct / total_samples
+#     train_avg_class_acc = train_class_acc.mean().item()
+
+#     if tensorboard_logger:
+#         tensorboard_logger.log_epoch(
+#             epoch,
+#             per_class_acc=train_class_acc.cpu().numpy(),
+#             per_class_loss=[running_loss / len(train_loader)],
+#             overall_acc=train_overall_acc
+#         )
+
+#     # Validation phase
+#     val_class_accuracy = ClassBasedAccuracy(num_classes=num_classes)
+#     model.eval()
+#     val_class_accuracy.reset()
+#     val_running_loss = 0.0
+#     val_total_correct = 0
+#     val_total_samples = 0
+
+#     with torch.no_grad():
+#         for inputs, labels in tqdm(val_loader, desc="Validation", leave=False):
+#             inputs, labels = inputs.to(device), labels.to(device)
+            
+#             outputs = model(inputs)
+#             loss = custom_loss_fn(outputs, labels)
+            
+#             _, predicted = torch.max(outputs, 1)
+            
+#             val_class_accuracy.update_state(labels, predicted)
+#             val_running_loss += loss.item()
+#             val_total_correct += (predicted == labels).sum().item()
+#             val_total_samples += labels.size(0)
+
+#     # Validation metrics
+#     val_class_acc = val_class_accuracy.compute()
+#     val_overall_acc = 100.0 * val_total_correct / val_total_samples
+#     val_avg_class_acc = val_class_acc.mean().item()
+
+#     if tensorboard_logger:
+#         tensorboard_logger.log_epoch(
+#             epoch,
+#             per_class_acc=val_class_acc.cpu().numpy(),
+#             per_class_loss=[val_running_loss / len(val_loader)],
+#             overall_acc=val_overall_acc
+#         )
+
+#     # Print epoch summary
+#     print(f"\nEpoch {epoch + 1}/{num_epochs}")
+#     print(f"Training   - Overall Accuracy: {train_overall_acc:.2f}%")
+#     print(f"Training   - Per Class Accuracies: {train_class_acc.cpu().numpy()}")
+#     # print(f"Training   - Avg Class Accuracy: {train_avg_class_acc*100:.2f}%")
+#     print(f"Validation - Overall Accuracy: {val_overall_acc:.2f}%")
+#     print(f"Validation - Per Class Accuracies: {val_class_acc.cpu().numpy():.4f}")
+#     # print(f"Validation - Avg Class Accuracy: {val_avg_class_acc*100:.2f}%")
+
+#     return model
+
+
+
+from torch.utils.tensorboard import SummaryWriter
+
+class TensorBoardLogger:
+    def __init__(self, log_dir='runs', class_names=None):
+        self.writer = SummaryWriter(log_dir)
+        self.class_names = class_names or {}
+
+    def log_epoch(self, epoch, per_class_acc, per_class_loss, overall_acc):
+        # Log per class accuracies
+        for i, acc in enumerate(per_class_acc):
+            class_label = self.class_names.get(i, f'Class_{i}')
+            self.writer.add_scalar(f'Per Class Accuracy/{class_label}', acc, epoch)
+        
+        # Log per class losses
+        for i, loss in enumerate(per_class_loss):
+            class_label = self.class_names.get(i, f'Class_{i}')
+            self.writer.add_scalar(f'Per Class Loss/{class_label}', loss, epoch)
+        
+        # Log overall accuracy
+        self.writer.add_scalar('Overall Accuracy', overall_acc, epoch)
+
+    def close(self):
+        self.writer.close()
+
+
+def train_and_validate_epoch(
+    model, 
+    train_loader, 
+    val_loader, 
+    optimizer, 
+    custom_loss_fn, 
+    device, 
+    num_classes, 
+    epoch, 
+    num_epochs, 
+    tensorboard_logger=None
+):
+    # Training phase
+    train_class_accuracy = ClassBasedAccuracy(num_classes=num_classes)
+    model.train()
+    train_class_accuracy.reset()
+    running_loss = 0.0
+    total_correct = 0
+    total_samples = 0
+
+    progress_bar = tqdm(train_loader, 
+                         desc=f"Epoch: {epoch + 1}/{num_epochs}", 
+                         leave=False, 
+                         ncols=120)
+
+    for i, (inputs, labels) in enumerate(progress_bar):
+        inputs, labels = inputs.to(device), labels.to(device)
+        
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        loss = custom_loss_fn(outputs, labels)
+        
+        loss.backward()
+        optimizer.step()
+        
+        _, predicted = torch.max(outputs, 1)
+        
+        train_class_accuracy.update_state(labels, predicted)
+        running_loss += loss.item()
+        total_correct += (predicted == labels).sum().item()
+        total_samples += labels.size(0)
+
+        progress_bar.set_postfix(
+            batch=f"[{i + 1}/{len(train_loader)}]", 
+            loss=f"{loss.item():.4f}", 
+            overall_acc=f"{100.0 * total_correct / total_samples:.2f}%"
+        )
+
+    # Training metrics
+    train_class_acc = train_class_accuracy.compute()
+    train_overall_acc = 100.0 * total_correct / total_samples
+    train_avg_class_acc = train_class_acc.mean().item()
+
+    if tensorboard_logger:
+        tensorboard_logger.log_epoch(
+            epoch,
+            per_class_acc=train_class_acc.cpu().numpy(),
+            per_class_loss=[running_loss / len(train_loader)],
+            overall_acc=train_overall_acc
+        )
+
+    # Validation phase
+    val_class_accuracy = ClassBasedAccuracy(num_classes=num_classes)
+    model.eval()
+    val_class_accuracy.reset()
+    val_running_loss = 0.0
+    val_total_correct = 0
+    val_total_samples = 0
+
+    with torch.no_grad():
+        for inputs, labels in tqdm(val_loader, desc="Validation", leave=False):
+            inputs, labels = inputs.to(device), labels.to(device)
+            
+            outputs = model(inputs)
+            loss = custom_loss_fn(outputs, labels)
+            
+            _, predicted = torch.max(outputs, 1)
+            
+            val_class_accuracy.update_state(labels, predicted)
+            val_running_loss += loss.item()
+            val_total_correct += (predicted == labels).sum().item()
+            val_total_samples += labels.size(0)
+
+    # Validation metrics
+    val_class_acc = val_class_accuracy.compute()
+    val_overall_acc = 100.0 * val_total_correct / val_total_samples
+    val_avg_class_acc = val_class_acc.mean().item()
+
+    if tensorboard_logger:
+        tensorboard_logger.log_epoch(
+            epoch,
+            per_class_acc=val_class_acc.cpu().numpy(),
+            per_class_loss=[val_running_loss / len(val_loader)],
+            overall_acc=val_overall_acc
+        )
+
+    # Print epoch summary
+    print(f"\nEpoch {epoch + 1}/{num_epochs}")
+    print(f"Training   - Overall Accuracy: {train_overall_acc:.2f}%")
+    print(f"Training   - Per Class Accuracies: {train_class_acc.cpu().numpy()}")
+    # print(f"Training   - Avg Class Accuracy: {train_avg_class_acc*100:.2f}%")
+    print(f"Validation - Overall Accuracy: {val_overall_acc:.2f}%")
+    print(f"Validation - Per Class Accuracies: {val_class_acc.cpu().numpy():.4f}")
+    # print(f"Validation - Avg Class Accuracy: {val_avg_class_acc*100:.2f}%")
+
+    return model
+
+
+!tensorboard --logdir="/home/mejan/projects/intrusion/Network_Intrusion_detection/tensorboard_logs"
