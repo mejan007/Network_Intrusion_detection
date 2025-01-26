@@ -28,6 +28,7 @@ def plot_data_distribution(y_train, y_valid, y_test, out_path, lookup):
     - out_path: Directory where the plot should be saved.
     - lookup: Dictionary mapping numeric labels to class names.
     """
+    plt.close('all')
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
     # Convert numeric labels to class names
@@ -58,15 +59,15 @@ def plot_data_distribution(y_train, y_valid, y_test, out_path, lookup):
     axes[2].set_xlabel('Class')
     axes[2].set_ylabel('Frequency')
 
+    dist_path = get_unique_filename(out_path)
     # Adjust layout for better readability
     plt.tight_layout()
+    print(f"Saved distribution plot as {dist_path}")
+    plt.savefig(dist_path)
     plt.show()
 
-    # Save the plot
-    dist_path = get_unique_filename(out_path)
-    plt.savefig(dist_path)
-    print(f"Saved distribution plot as {dist_path}")
-
+    plt.close(fig)
+ 
 def plot_roc_curve(fpr, tpr, roc_auc, dataset_type, output_folder):
     """Plots and saves the ROC curve."""
     plt.figure()
