@@ -19,7 +19,7 @@ class ClassBasedAccuracy(nn.Module):
         """Update the metric state with the true and predicted values."""
         # Move tensors to the same device if needed
         if y_true.device != self.correct.device:
-            print("oh shett")
+            # print("oh shett")
             self.correct = self.correct.to(y_true.device)
             self.total = self.total.to(y_true.device)
         

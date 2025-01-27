@@ -218,29 +218,8 @@
 
 
 
-from torch.utils.tensorboard import SummaryWriter
 
-class TensorBoardLogger:
-    def __init__(self, log_dir='runs', class_names=None):
-        self.writer = SummaryWriter(log_dir)
-        self.class_names = class_names or {}
 
-    def log_epoch(self, epoch, per_class_acc, per_class_loss, overall_acc):
-        # Log per class accuracies
-        for i, acc in enumerate(per_class_acc):
-            class_label = self.class_names.get(i, f'Class_{i}')
-            self.writer.add_scalar(f'Per Class Accuracy/{class_label}', acc, epoch)
-        
-        # Log per class losses
-        for i, loss in enumerate(per_class_loss):
-            class_label = self.class_names.get(i, f'Class_{i}')
-            self.writer.add_scalar(f'Per Class Loss/{class_label}', loss, epoch)
-        
-        # Log overall accuracy
-        self.writer.add_scalar('Overall Accuracy', overall_acc, epoch)
-
-    def close(self):
-        self.writer.close()
 
 
 def train_and_validate_epoch(
@@ -252,8 +231,8 @@ def train_and_validate_epoch(
     device, 
     num_classes, 
     epoch, 
-    num_epochs, 
-    tensorboard_logger=None
+    num_epochs,
+    lookup
 ):
     # Training phase
     train_class_accuracy = ClassBasedAccuracy(num_classes=num_classes)
@@ -296,13 +275,16 @@ def train_and_validate_epoch(
     train_overall_acc = 100.0 * total_correct / total_samples
     train_avg_class_acc = train_class_acc.mean().item()
 
-    if tensorboard_logger:
-        tensorboard_logger.log_epoch(
-            epoch,
-            per_class_acc=train_class_acc.cpu().numpy(),
-            per_class_loss=[running_loss / len(train_loader)],
-            overall_acc=train_overall_acc
-        )
+    # Log training metrics to wandb
+    train_class_acc_table = wandb.Table(columns=["Class Name", "Accuracy"])
+    for i, acc in enumerate(train_class_acc.cpu().numpy()):
+        train_class_acc_table.add_data(lookup[i], acc)
+
+    wandb.log({
+        "train/loss": running_loss / len(train_loader),
+        "train/overall_accuracy": train_overall_acc,
+        "train/per_class_accuracies": train_class_acc_table
+    })
 
     # Validation phase
     val_class_accuracy = ClassBasedAccuracy(num_classes=num_classes)
@@ -331,24 +313,36 @@ def train_and_validate_epoch(
     val_overall_acc = 100.0 * val_total_correct / val_total_samples
     val_avg_class_acc = val_class_acc.mean().item()
 
-    if tensorboard_logger:
-        tensorboard_logger.log_epoch(
-            epoch,
-            per_class_acc=val_class_acc.cpu().numpy(),
-            per_class_loss=[val_running_loss / len(val_loader)],
-            overall_acc=val_overall_acc
-        )
+    # Log validation metrics to wandb
+    val_class_acc_table = wandb.Table(columns=["Class Name", "Accuracy"])
+    for i, acc in enumerate(val_class_acc.cpu().numpy()):
+        val_class_acc_table.add_data(lookup[i], acc)
+
+    wandb.log({
+        "val/loss": val_running_loss / len(val_loader),
+        "val/overall_accuracy": val_overall_acc,
+        "val/per_class_accuracies": val_class_acc_table
+    })
 
     # Print epoch summary
     print(f"\nEpoch {epoch + 1}/{num_epochs}")
     print(f"Training   - Overall Accuracy: {train_overall_acc:.2f}%")
     print(f"Training   - Per Class Accuracies: {train_class_acc.cpu().numpy()}")
-    # print(f"Training   - Avg Class Accuracy: {train_avg_class_acc*100:.2f}%")
     print(f"Validation - Overall Accuracy: {val_overall_acc:.2f}%")
-    print(f"Validation - Per Class Accuracies: {val_class_acc.cpu().numpy():.4f}")
-    # print(f"Validation - Avg Class Accuracy: {val_avg_class_acc*100:.2f}%")
+    print(f"Validation - Per Class Accuracies: {val_class_acc.cpu().numpy()}")
 
     return model
 
+
+def log_test(self, step, per_class_acc, avg_loss, overall_acc):
+        prefix = 'test/'
+        
+        # Log test metrics
+        for i, acc in enumerate(per_class_acc):
+            class_label = self.class_names.get(i, f'Class_{i}')
+            self.writer.add_scalar(f'{prefix}Per Class Accuracy/{class_label}', acc, step)
+        
+        self.writer.add_scalar(f'{prefix}Average Loss', avg_loss, step)
+        self.writer.add_scalar(f'{prefix}Overall Accuracy', overall_acc, step)
 
 !tensorboard --logdir="/home/mejan/projects/intrusion/Network_Intrusion_detection/tensorboard_logs"

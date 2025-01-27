@@ -20,6 +20,7 @@ class CustomCrossEntropyLoss(nn.Module):
         return loss
     
 
+
 class CustomFocalLoss(nn.Module):
     def __init__(self, alpha, gamma = 2, reduction = 'mean'):
         super().__init__()
